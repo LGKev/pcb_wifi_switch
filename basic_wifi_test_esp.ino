@@ -1,8 +1,8 @@
 #include <ESP8266WiFi.h>
 
 #define INDICATOR_LED     D6 //GPIO 12 (ESP) d6 default
-#define RELAY_PIN         D0 //GPIO 16 (ESP)
-#define LED_PIN			  D2 //GPIO 02 (ESP) built in led
+#define RELAY_PIN         D2 //GPIO 16 (ESP)
+#define LED_PIN			  D0 //GPIO 02 (ESP) built in led
 #define BUTTON_PIN		  D5 //GPIO 14 (ESP)
 
  
@@ -12,6 +12,8 @@ const char* password = "kwatj0w1";//type your password
 volatile bool relay_onQ = false; // set the initial flag to not on.
 volatile bool change = false; //changed in the ISR.
 volatile bool last_relay_state = false; //so we can toggle
+ 
+volatile int value = LOW;
  
 WiFiServer server(80);//Service Port
  
@@ -68,23 +70,6 @@ void setup() {
 }
  
 void loop() {
-	
-	if(change == true){
-		if(relay_onQ == false){ //if off turn on
-			relay_onQ = true;
-			//toggle
-			digitalWrite(RELAY_PIN, HIGH);
-			digitalWrite(LED_PIN, HIGH);
-		}
-		else{
-			relay_onQ = false; //if was on turn off
-			//toggle
-			digitalWrite(RELAY_PIN, LOW);
-			digitalWrite(LED_PIN, LOW);
-		}					
-	change = false;
-	}
-	
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -92,27 +77,44 @@ void loop() {
   }
    
   // Wait until the client sends some data
- // Serial.println("new client");
   while(!client.available()){
     delay(1);
   }
    
   // Read the first line of the request
   String request = client.readStringUntil('\r');
-//  Serial.println(request);
   client.flush();
    
-  // Match the request
- 
-  int value = LOW;
-  if (request.indexOf("/LED=ON") != -1) {
+   
+   	
+	if(change == true){
+		if(relay_onQ == false){ //if off turn on
+		Serial.println("WTF");
+			relay_onQ = true;
+			//toggle
+			digitalWrite(RELAY_PIN, HIGH);
+			digitalWrite(INDICATOR_LED, HIGH);
+			value = HIGH;
+			}
+		else{
+			relay_onQ = false; //if was on turn off
+			//toggle
+			digitalWrite(RELAY_PIN, LOW);
+			digitalWrite(INDICATOR_LED, LOW);
+			value = LOW;
+		}
+	change = false;
+	}
+   
+   //:TODO
+  if (request.indexOf("/LED=OFF") != -1) {
     digitalWrite(LED_PIN, LOW);
     value = LOW;
     digitalWrite(RELAY_PIN, LOW);
 	digitalWrite(INDICATOR_LED, LOW);
 	relay_onQ = true;
   } 
-  if (request.indexOf("/LED=OFF") != -1){
+  if (request.indexOf("/LED=ON") != -1){
     digitalWrite(LED_PIN, HIGH);
     value = HIGH;
         digitalWrite(RELAY_PIN, HIGH);
@@ -134,17 +136,16 @@ void loop() {
    
   if(value == HIGH) {
     client.print("On");  
+	Serial.println("itts lite");
   } else {
     client.print("Off");
   }
   client.println("<br><br>");
-  client.println("Click <a href=\"/LED=OFF\">here</a> turn the LED on pin 2 ON<br>");
-  client.println("Click <a href=\"/LED=ON\">here</a> turn the LED on pin 2 OFF<br>");
+  client.println("Click <a href=\"/LED=ON\">here</a> turn the LED on pin 2 ON<br>");
+  client.println("Click <a href=\"/LED=OFF\">here</a> turn the LED on pin 2 OFF<br>");
   client.println("</html>");
  
   delay(1);
- // Serial.println("Client disconnected");
-  //Serial.println("");
 }
 
 
