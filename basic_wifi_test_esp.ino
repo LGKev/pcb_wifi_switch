@@ -11,6 +11,7 @@ const char* password = "kwatj0w1";//type your password
 
 volatile bool relay_onQ = false; // set the initial flag to not on.
 volatile bool change = false; //changed in the ISR.
+volatile bool last_relay_state = false; //so we can toggle
  
 WiFiServer server(80);//Service Port
  
@@ -69,15 +70,21 @@ void setup() {
 void loop() {
 	
 	if(change == true){
-		digitalWrite(RELAY_PIN, HIGH);
-		delay(1000);
-		digitalWrite(RELAY_PIN, LOW);
-		change = false;
+		if(relay_onQ == false){ //if off turn on
+			relay_onQ = true;
+			//toggle
+			digitalWrite(RELAY_PIN, HIGH);
+			digitalWrite(LED_PIN, HIGH);
+		}
+		else{
+			relay_onQ = false; //if was on turn off
+			//toggle
+			digitalWrite(RELAY_PIN, LOW);
+			digitalWrite(LED_PIN, LOW);
+		}					
+	change = false;
 	}
 	
-	
-	//feed wdt
-	ESP.wdtFeed();
   // Check if a client has connected
   WiFiClient client = server.available();
   if (!client) {
@@ -103,13 +110,14 @@ void loop() {
     value = LOW;
     digitalWrite(RELAY_PIN, LOW);
 	digitalWrite(INDICATOR_LED, LOW);
+	relay_onQ = true;
   } 
   if (request.indexOf("/LED=OFF") != -1){
     digitalWrite(LED_PIN, HIGH);
     value = HIGH;
         digitalWrite(RELAY_PIN, HIGH);
 			digitalWrite(INDICATOR_LED, LOW);
-
+	relay_onQ = false;
   }
  
   //Set LED_PIN according to the request
@@ -152,6 +160,5 @@ void loop() {
 	hardware debeounce in place. 
 */
 void toggleISR(){
-Serial.println("triggered");
 change = true;
 }
